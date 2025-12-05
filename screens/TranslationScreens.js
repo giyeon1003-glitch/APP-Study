@@ -1,30 +1,33 @@
 import React, { useContext, useState } from 'react';
-import { View, FlatList, StyleSheet, Button } from 'react-native';
+import { View, FlatList, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import MicButton from '../components/MicButton';
 import ChatMessage from '../components/ChatMessage';
-import { TranslationContext } from '../context/TranslationContext'; 
-import useAudioRecorder from '../hooks/useAudioRecorder'; // 녹음
+import LanguageSelector from '../components/LanguageSelector';
+import { TranslationContext } from '../context/TranslationContext';
+import useAudioRecorder from '../hooks/useAudioRecorder';
 import { speechToText } from '../services/sttService';
 import { translateText } from '../services/translationService';
-import { playTTS } from '../services/ttsService';
 
 export default function TranslationScreen() {
-  const { sourceLang, targetLang } = useContext(TranslationContext);
+  const { sourceLang, setSourceLang, targetLang, setTargetLang } = useContext(TranslationContext);
   const { recording, startRecording, stopRecording, getAudioUri } = useAudioRecorder();
   const [messages, setMessages] = useState([]);
 
-  // 녹음버튼 눌렀을 때 동작 처리
+  const handleSwapLanguages = () => {
+    const prevSource = sourceLang;
+    setSourceLang(targetLang);
+    setTargetLang(prevSource);
+  };
+
   const handleRecord = async () => {
     if (!recording) {
       startRecording();
     } else {
       await stopRecording();
-      const audioUri = await getAudioUri(); // 녹음된 파일의 경로 가져오기
+      const audioUri = await getAudioUri();
 
-      // 1) 음성 > 텍스트(STT)
-      // STT API 요청
-      const userText = await speechToText(audioUri, sourceLang); 
-      addMessage(userText, true); // 채팅창에 사용자가 말한 문장 추가(True는 사용자의 말풍선)
+      const userText = await speechToText(audioUri, sourceLang);
+      addMessage(userText, true);
 
       const translated = await translateText(userText, sourceLang, targetLang);
       addMessage(translated, false);
@@ -37,6 +40,36 @@ export default function TranslationScreen() {
 
   return (
     <View style={styles.container}>
+
+      {/* ⭐ 상단 언어 선택 + 교환 버튼 */}
+      <View style={styles.topSelectorBox}>
+        
+        {/* Source Selector */}
+        <View style={styles.selector}>
+          <LanguageSelector
+            label="Source"
+            value={sourceLang}
+            onChange={setSourceLang}
+          />
+        </View>
+
+        {/* 교환 버튼 */}
+        <TouchableOpacity style={styles.swapButton} onPress={handleSwapLanguages}>
+          <Text style={styles.swapText}>↔</Text>
+        </TouchableOpacity>
+
+        {/* Target Selector */}
+        <View style={styles.selector}>
+          <LanguageSelector
+            label="Target"
+            value={targetLang}
+            onChange={setTargetLang}
+          />
+        </View>
+
+      </View>
+
+      {/* 채팅창 */}
       <FlatList
         data={messages}
         renderItem={({ item }) => (
@@ -44,17 +77,47 @@ export default function TranslationScreen() {
             text={item.text}
             isUser={item.isUser}
             lang={item.isUser ? sourceLang : targetLang}
-            />
-            )}
+          />
+        )}
         keyExtractor={item => item.id}
         contentContainerStyle={{ padding: 20 }}
+        style={{ flex: 1 }}
       />
 
+      {/* Mic 버튼 */}
       <MicButton recording={recording} onPress={handleRecord} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { 
+    flex: 1,
+    backgroundColor: '#fff'
+  },
+
+  topSelectorBox: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    alignItems: 'center',
+  },
+
+  selector: {
+    flex: 1,
+  },
+
+  swapButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginHorizontal: 8,
+    backgroundColor: '#ddd',
+    borderRadius: 20,
+  },
+
+  swapText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+  }
 });
