@@ -2,7 +2,7 @@
 import React, { createContext, useState, useContext } from 'react';
 import { Alert } from 'react-native';
 // Languages.js 파일에서 언어 목록 가져오기(경로 주의)
-import {SUPPORTED_LANGUAGES} from '..\constants\Lanhuages';
+import {SUPPORTED_LANGUAGES} from '../constants/Languages';
 // helper함수 가져오기
 import {isValidText} from '../utils/helpers';
 // 실제 번역 서비스 가져오기
@@ -19,7 +19,7 @@ export const TranslationProvider = ({ children }) => {
   const [targetLang, setTargetLang] = useState(SUPPORTED_LANGUAGES[1].code); // 번역할 언어(기본: 영어)
 
   const [messages, setMessages] = useState([]); // 채팅기록(화면에 나타나는 리스트)
-  const [isLoadin, setIsLoading] = useState(false); // 로딩중인지 여부 결정
+  const [isLoading, setIsLoading] = useState(false); // 로딩중인지 여부 결정
 
   // --- [Actions] 기능을 수행하는 함수들 ---
   // 메시지 추가 헬퍼 함수
@@ -35,7 +35,7 @@ export const TranslationProvider = ({ children }) => {
 
   //  핵심 기능: 메시지 전송 및 번역 요청
   const handleSendMessage = async (text) => {
-    if (!text.trim()) return;
+    if (!isValidText(text)) return;
 
     // 1. 사용자 메시지를 먼저 화면에 표시
     addToMessageList(text, true);
@@ -43,14 +43,16 @@ export const TranslationProvider = ({ children }) => {
 
     try {
       // -----------------------------------------------------------
-      // [TODO] 팀원 C가 만든 API 서비스가 완성되면 여기에 연결합니다.
-      // 지금은 테스트를 위해 1초 뒤에 "가짜 응답"을 주도록 해놨습니다.
+      // 번역 서비스를 호출하여 결과를 받아옵니다.
       // -----------------------------------------------------------
 
-      console.log('[번역 요청] ${sourcdLang} -> ${targetLang} : ${text}');
+      console.log(`[번역 요청] ${sourceLang} -> ${targetLang} : ${text}`);
       
       // 번역 서비스 연결
       const translatedResult = await translateText(text, sourceLang, targetLang);
+
+      // 결과가 비어있을 경우 대비(안전장치)
+      if (!translatedResult) throw new Error("번역 결과가 없습니다.");
 
       // 2. 번역된 결과(또는 응답)를 화면에 표시
       addToMessageList(translatedResult, false);
