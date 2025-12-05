@@ -12,6 +12,7 @@ export const formatTime = (dateString) => {
   });
 };
 
+
 // 2. 텍스트 유효성 검사 (빈 공백만 있는지 확인)
 // 예: "   " -> false, "안녕" -> true
 export const isValidText = (text) => {
@@ -20,12 +21,12 @@ export const isValidText = (text) => {
 
 // 3. 파일 전송용 FormData 생성기 (팀원 C를 위한 선물 )
 // 오디오 파일 URI를 서버에 보낼 수 있는 FormData 객체로 변환해줍니다.
-export const createAudioFormData = (uri) => {
+export const createAudioFormData = (uri, fieldName = 'file') => {
   const fileName = uri.split('/').pop(); // 파일명 추출
   const fileType = fileName.split('.').pop(); // 확장자 추출 (m4a, mp4 등)
 
   const formData = new FormData();
-  formData.append('file', {
+  formData.append(fieldName, {
     uri: uri,
     name: fileName,
     type: `audio/${fileType}`, // 예: audio/m4a
